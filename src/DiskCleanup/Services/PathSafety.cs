@@ -32,6 +32,9 @@ internal static class PathSafety
         _allowedInsideProtected = BuildAllowed();
         _protectedPaths = BuildProtectedPaths();
         _containerPaths = BuildContainerPaths();
+        _protectedSet = new HashSet<string>(_protectedPaths, StringComparer.OrdinalIgnoreCase);
+        _allowedSet = new HashSet<string>(_allowedInsideProtected, StringComparer.OrdinalIgnoreCase);
+        _wholeBlockedSet = BuildWholeBlockedSet();
     }
 
     public static string Normalize(string path)
@@ -204,6 +207,48 @@ internal static class PathSafety
             return false;
         }
     }
+
+    // ---- fast checks for the scanner -------------------------------------
+    // The scanner builds every path from an already normalised root, so it can
+    // avoid GetFullPath and the list walks. These give the same answers as
+    // IsProtected and IsWholeBlocked (the tests compare them).
+
+    private static HashSet<string> _protectedSet = new HashSet<string>(_protectedPaths, StringComparer.OrdinalIgnoreCase);
+    private static HashSet<string> _allowedSet = new HashSet<string>(_allowedInsideProtected, StringComparer.OrdinalIgnoreCase);
+    private static HashSet<string> _wholeBlockedSet = BuildWholeBlockedSet();
+
+    private static HashSet<string> BuildWholeBlockedSet()
+    {
+        var set = new HashSet<string>(_containerPaths, StringComparer.OrdinalIgnoreCase);
+        foreach (var p in _protectedPaths)
+        {
+            var cur = Path.GetDirectoryName(p);
+            while (!string.IsNullOrEmpty(cur))
+            {
+                set.Add(Normalize(cur));
+                cur = Path.GetDirectoryName(cur);
+            }
+        }
+        return set;
+    }
+
+    /// <summary>
+    /// Protected check for one entry whose parent was already checked. The path and
+    /// name must be normalised (built with Path.Combine from a normalised root).
+    /// </summary>
+    internal static bool IsProtectedChild(string childPath, string childName, bool parentProtected, bool parentIsDriveRoot)
+    {
+        if (AnywhereNames.Contains(childName) ||
+            childName.StartsWith("NTUSER.DAT", StringComparison.OrdinalIgnoreCase) ||
+            childName.StartsWith("ntuser.ini", StringComparison.OrdinalIgnoreCase)) return true;
+        if (parentIsDriveRoot && RootNames.Contains(childName)) return true;
+        if (_allowedSet.Contains(childPath)) return false;
+        return parentProtected || _protectedSet.Contains(childPath);
+    }
+
+    /// <summary>Same answer as IsWholeBlocked for a normalised path, without allocating.</summary>
+    internal static bool IsWholeBlockedFast(string normalizedPath, bool isDriveRoot) =>
+        isDriveRoot || _wholeBlockedSet.Contains(normalizedPath);
 
     /// <summary>SHFileOperation cannot take longer paths and would remove them for good.</summary>
     public const int MaxRecyclablePath = 259;
