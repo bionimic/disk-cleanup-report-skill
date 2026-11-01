@@ -33,6 +33,7 @@ internal sealed class MainViewModel : ViewModelBase
     {
         IsAdmin = Elevation.IsAdministrator();
         ScanCommand = new RelayCommand(p => _ = ScanAsync(p as DriveViewModel), _ => !IsBusy);
+        ScanAllCommand = new RelayCommand(_ => _ = ScanAllAsync(), _ => !IsBusy && Drives.Count > 0);
         CancelCommand = new RelayCommand(_ => _cts?.Cancel(), _ => IsBusy);
         ReviewCommand = new RelayCommand(_ => RequestReview(), _ => HasSelection && !IsBusy);
         ClearCommand = new RelayCommand(_ => ClearSelection(), _ => HasSelection);
@@ -41,10 +42,14 @@ internal sealed class MainViewModel : ViewModelBase
         EmptyBinCommand = new RelayCommand(p => EmptyBin(p as DriveViewModel), _ => !IsBusy);
         RefreshQuickCommand = new RelayCommand(_ => _ = LoadQuickAsync(), _ => !IsBusy);
 
+        TreeRoots.CollectionChanged += (_, _) => Raise(nameof(HasScan));
         FileNode.SelectionChanged += QueueSummary;
         _timer.Tick += (_, _) => UpdateProgress();
         LoadDrives();
     }
+
+    /// <summary>True once at least one drive has been scanned. The scan pages stay disabled until then.</summary>
+    public bool HasScan => TreeRoots.Count > 0;
 
     public bool IsAdmin { get; }
     public string AdminText => IsAdmin ? "Running as administrator" : "Standard mode";
@@ -55,6 +60,10 @@ internal sealed class MainViewModel : ViewModelBase
     public ObservableCollection<FileNode> BiggestFiles { get; } = new ObservableCollection<FileNode>();
     public ObservableCollection<ExtensionRow> Extensions { get; } = new ObservableCollection<ExtensionRow>();
 
+    public ObservableCollection<FileNode> FoundItems { get; } = new ObservableCollection<FileNode>();
+    private readonly Dictionary<string, List<FileNode>> _found = new Dictionary<string, List<FileNode>>(StringComparer.OrdinalIgnoreCase);
+
+    public ICommand ScanAllCommand { get; }
     public ICommand ScanCommand { get; }
     public ICommand CancelCommand { get; }
     public ICommand ReviewCommand { get; }
@@ -174,6 +183,10 @@ internal sealed class MainViewModel : ViewModelBase
         {
             var result = await _scanner.ScanAsync(drive.Root, _cts.Token);
 
+            // Label cleanup candidates before the tree is shown. This only marks them, nothing is ticked.
+            _found[drive.Root] = Suggestions.Apply(result.Root);
+            foreach (var n in _found[drive.Root]) n.DriveBadge = n.Drive;
+
             var old = TreeRoots.FirstOrDefault(r => r.FullPath.Equals(result.Root.FullPath, StringComparison.OrdinalIgnoreCase));
             if (old != null) TreeRoots.Remove(old);
             TreeRoots.Add(result.Root);
@@ -217,8 +230,22 @@ internal sealed class MainViewModel : ViewModelBase
     private static string Shorten(string text, int max) =>
         text.Length <= max ? text : "..." + text.Substring(text.Length - max + 3);
 
+    private async Task ScanAllAsync()
+    {
+        foreach (var d in Drives.ToList())
+        {
+            await ScanAsync(d);
+            if (!d.ScanState.StartsWith("Scanned", StringComparison.Ordinal)) break; // cancelled or failed: stop here
+        }
+        Page = 5;
+        Status = "Scanned all drives. " + FoundItems.Count + " cleanup candidates found. Tick what you want, then press Review.";
+    }
+
     private void RebuildScanViews()
     {
+        FoundItems.Clear();
+        foreach (var n in _found.Values.SelectMany(v => v).OrderByDescending(n => n.Size)) FoundItems.Add(n);
+
         BiggestFiles.Clear();
         foreach (var f in _scans.Values.SelectMany(s => s.BiggestFiles).OrderByDescending(f => f.Size).Take(300))
             BiggestFiles.Add(f);
@@ -261,6 +288,7 @@ internal sealed class MainViewModel : ViewModelBase
                 {
                     ContentsOnly = k.ContentsOnly,
                     Advice = k.Advice,
+                    DriveBadge = Path.GetPathRoot(PathSafety.Normalize(k.Path))?.TrimEnd((char)92) ?? string.Empty,
                     Hint = k.Description + (k.NeedsAdmin && !IsAdmin ? " Run as administrator to clear this fully." : string.Empty),
                     IsProtected = PathSafety.IsProtected(k.Path)
                 };
@@ -317,6 +345,7 @@ internal sealed class MainViewModel : ViewModelBase
         {
             WholeBlocked = true,
             Advice = Advice.Check,
+            DriveBadge = Path.GetPathRoot(downloads)?.TrimEnd((char)92) ?? string.Empty,
             Hint = "Remove the ones you already installed. Pick them one by one."
         };
         try
@@ -398,6 +427,7 @@ internal sealed class MainViewModel : ViewModelBase
             RemovePath(r.Path, contentsOnly, r.MovedBytes);
         }
         foreach (var f in BiggestFiles.Where(f => !File.Exists(f.FullPath)).ToList()) BiggestFiles.Remove(f);
+        foreach (var f in FoundItems.Where(f => !File.Exists(f.FullPath) && !Directory.Exists(f.FullPath)).ToList()) FoundItems.Remove(f);
 
         ClearSelection();
         RefreshFreeSpace();
