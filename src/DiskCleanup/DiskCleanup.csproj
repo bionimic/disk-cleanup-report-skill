@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="DiskCleanup.Tests" />
+    <InternalsVisibleTo Include="ScanBench" />
   </ItemGroup>
 
 </Project>
