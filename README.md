@@ -10,8 +10,10 @@ The repo also contains the original Claude skill the app grew out of, see
 
 ## What it does
 
-- **Overview**: every fixed drive with used and free space and the size of its Recycle Bin.
-- **Quick clean**: the usual space users (temp files, shader caches, crash dumps, npm, pip, Gradle, NuGet, Composer caches, old installers in Downloads, AI models, emulators, Docker and WSL disks), measured and grouped as **Safe to clear** or **Your call, check first**. One button ticks everything safe.
+- **Overview**: every fixed drive with used and free space and the size of its Recycle Bin. Scan one drive, or **Scan all drives**.
+- **Quick clean**: the usual space users on C: (temp files, shader caches, crash dumps, npm, pip, Gradle, NuGet, Composer caches, old installers in Downloads, AI models, emulators, Docker and WSL disks), each row labelled with its drive, grouped as **Safe to clear** or **Your call, check first**. One button ticks everything safe.
+- **Found on drives**: cleanup candidates spotted on every drive you scanned (`node_modules` and other folders that rebuild, crash dumps, temp folders, big installers and archives), marked Safe or Check first. Nothing is ticked for you.
+- The pages that need scan results stay greyed out until a drive has been scanned.
 - **Browse folders**: a tree of your drive, biggest first, with a checkbox on every folder and file.
 - **Biggest files**: the 300 largest single files.
 - **File types**: how much space each file type uses.

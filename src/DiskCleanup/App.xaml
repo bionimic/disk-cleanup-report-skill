@@ -74,7 +74,26 @@
             <Setter Property="Padding" Value="16" />
         </Style>
 
+        <!-- No dotted keyboard focus box around pages, lists and trees. -->
+        <Style TargetType="ScrollViewer" BasedOn="{StaticResource {x:Type ScrollViewer}}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+        <Style TargetType="TreeView" BasedOn="{StaticResource {x:Type TreeView}}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+        <Style TargetType="ListBox" BasedOn="{StaticResource {x:Type ListBox}}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+        <Style TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+        <Style TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+
         <Style x:Key="NavItem" TargetType="ListBoxItem">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="Padding" Value="14,10" />
             <Setter Property="Margin" Value="0,0,0,2" />
             <Setter Property="Foreground" Value="{StaticResource Ink}" />
@@ -91,6 +110,10 @@
                             <Trigger Property="IsSelected" Value="True">
                                 <Setter TargetName="Bd" Property="Background" Value="{StaticResource Accent}" />
                                 <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Background" Value="Transparent" />
+                                <Setter Property="Opacity" Value="0.38" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -124,6 +147,8 @@
                 <CheckBox DockPanel.Dock="Left" IsThreeState="True" VerticalAlignment="Center" Margin="0,0,8,0"
                           IsChecked="{Binding IsChecked, Mode=TwoWay}" IsEnabled="{Binding CanSelect}" />
                 <TextBlock DockPanel.Dock="Left" Text="{Binding Name}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <TextBlock DockPanel.Dock="Left" Text="{Binding DriveBadge}" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{StaticResource TextMuted}" Margin="8,0,0,0" VerticalAlignment="Center" />
                 <TextBlock DockPanel.Dock="Left" Text="{Binding AdviceText}" Style="{StaticResource Badge}" />
                 <TextBlock Text="{Binding Hint}" Foreground="{StaticResource TextMuted}" FontSize="11"
                            Margin="10,0,0,0" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
@@ -131,6 +156,7 @@
         </HierarchicalDataTemplate>
 
         <Style x:Key="NodeContainer" TargetType="TreeViewItem">
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
             <Setter Property="IsExpanded" Value="False" />
         </Style>

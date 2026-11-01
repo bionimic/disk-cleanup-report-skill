@@ -49,6 +49,11 @@ public sealed class FileNode : INotifyPropertyChanged
     public string Hint { get; set; } = string.Empty;
     public string Group { get; set; } = string.Empty;
 
+    /// <summary>Drive letter shown next to the name, set only where the list mixes drives.</summary>
+    public string DriveBadge { get; set; } = string.Empty;
+
+    public string Drive => string.IsNullOrEmpty(FullPath) ? string.Empty : (System.IO.Path.GetPathRoot(FullPath) ?? string.Empty).TrimEnd((char)92);
+
     public bool CanSelect => !IsProtected && !WholeBlocked;
     public bool CanSelectWhole => !IsProtected && !WholeBlocked;
 

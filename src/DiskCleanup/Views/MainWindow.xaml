@@ -27,6 +27,11 @@
                 <DataTrigger Binding="{Binding Page}" Value="3"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
             </Style.Triggers>
         </Style>
+        <Style x:Key="Page5" TargetType="Grid" BasedOn="{StaticResource PageStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Page}" Value="5"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+            </Style.Triggers>
+        </Style>
         <Style x:Key="Page4" TargetType="Grid" BasedOn="{StaticResource PageStyle}">
             <Style.Triggers>
                 <DataTrigger Binding="{Binding Page}" Value="4"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
@@ -84,9 +89,10 @@
                      ItemContainerStyle="{StaticResource NavItem}" SelectedIndex="{Binding Page, Mode=TwoWay}">
                 <ListBoxItem Content="Overview" />
                 <ListBoxItem Content="Quick clean" />
-                <ListBoxItem Content="Browse folders" />
-                <ListBoxItem Content="Biggest files" />
-                <ListBoxItem Content="File types" />
+                <ListBoxItem Content="Browse folders" IsEnabled="{Binding HasScan}" ToolTip="Scan a drive first" />
+                <ListBoxItem Content="Biggest files" IsEnabled="{Binding HasScan}" ToolTip="Scan a drive first" />
+                <ListBoxItem Content="File types" IsEnabled="{Binding HasScan}" ToolTip="Scan a drive first" />
+                <ListBoxItem Content="Found on drives" IsEnabled="{Binding HasScan}" ToolTip="Scan a drive first" />
             </ListBox>
 
             <Grid Grid.Column="1" Margin="0,12,12,12">
@@ -94,7 +100,11 @@
                 <Grid Style="{StaticResource Page0}">
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
-                            <TextBlock Text="Your drives" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10" />
+                            <DockPanel Margin="0,0,0,10">
+                                <Button DockPanel.Dock="Right" Content="Scan all drives" Style="{StaticResource PrimaryButton}"
+                                        Command="{Binding ScanAllCommand}" />
+                                <TextBlock Text="Your drives" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center" />
+                            </DockPanel>
                             <ItemsControl ItemsSource="{Binding Drives}">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
@@ -226,6 +236,46 @@
                                 <DataGridTextColumn Header="Type" Binding="{Binding Extension}" Width="*" />
                                 <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" Width="120" />
                                 <DataGridTextColumn Header="Files" Binding="{Binding Count, StringFormat=N0}" Width="120" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+
+                <!-- 5: Found on drives -->
+                <Grid Style="{StaticResource Page5}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Margin="0,0,0,10" Foreground="{StaticResource TextMuted}" TextWrapping="Wrap"
+                               Text="Cleanup candidates found on every drive you scanned: build folders that rebuild, crash dumps, temp folders, and big installers or archives. Nothing is ticked for you." />
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0">
+                        <DataGrid ItemsSource="{Binding FoundItems}" AutoGenerateColumns="False" CanUserAddRows="False"
+                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" BorderThickness="0"
+                                  HorizontalGridLinesBrush="{StaticResource Border}" Background="White" RowBackground="White"
+                                  SelectionMode="Single" EnableRowVirtualization="True">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="" Width="36">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      IsEnabled="{Binding CanSelect}" HorizontalAlignment="Center" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="Drive" Binding="{Binding Drive}" IsReadOnly="True" Width="56" />
+                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" IsReadOnly="True" Width="*" />
+                                <DataGridTextColumn Header="Where" Binding="{Binding Folder}" IsReadOnly="True" Width="2*" />
+                                <DataGridTextColumn Header="Advice" Binding="{Binding AdviceText}" IsReadOnly="True" Width="100" />
+                                <DataGridTextColumn Header="Why" Binding="{Binding Hint}" IsReadOnly="True" Width="2*" />
+                                <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" IsReadOnly="True" Width="90">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="TextAlignment" Value="Right" />
+                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Border>
