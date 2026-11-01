@@ -236,26 +236,22 @@ internal sealed class MainViewModel : ViewModelBase
 
     public async Task LoadQuickAsync()
     {
-        if (IsBusy) return;
-        IsBusy = true;
-        Status = "Measuring the usual space users...";
+        // Measuring never locks the rest of the app, and no single folder can hold it up.
+        if (_measuring) return;
+        _measuring = true;
+        if (!IsBusy) Status = "Measuring the usual space users...";
+        var slow = new List<string>();
         try
         {
-            var found = await Task.Run(() =>
+            var measured = await Task.WhenAll(_known.Select(MeasureAsync));
+            var found = new List<(KnownLocation K, long Size)>();
+            foreach (var m in measured)
             {
-                var list = new List<(KnownLocation K, long Size)>();
-                var sync = new object();
-                Parallel.ForEach(_known, k =>
-                {
-                    if (!Directory.Exists(k.Path)) return;
-                    var size = FileSizing.GetSize(k.Path);
-                    if (size <= 0) return;
-                    lock (sync) list.Add((k, size));
-                });
-                return list;
-            });
+                if (m.TimedOut) slow.Add(m.K.Name);
+                else if (m.Size > 0) found.Add((m.K, m.Size));
+            }
 
-            var downloads = await Task.Run(BuildDownloadsGroup);
+            var downloads = await WithTimeout(Task.Run(BuildDownloadsGroup), null);
 
             var safe = NewHeader("Safe to clear (rebuilds itself)");
             var check = NewHeader("Your call, check first");
@@ -279,13 +275,34 @@ internal sealed class MainViewModel : ViewModelBase
                 header.Size = header.Children.Sum(c => c.Size);
                 if (header.Children.Count > 0) QuickRoots.Add(header);
             }
-            Status = QuickRoots.Count == 0 ? "Nothing big found in the usual places." : "Tick what you want to clear, then press Review.";
+            if (!IsBusy)
+            {
+                var note = slow.Count > 0 ? " Skipped (too slow to read): " + string.Join(", ", slow) + "." : string.Empty;
+                Status = (QuickRoots.Count == 0 ? "Nothing big found in the usual places." : "Tick what you want to clear, then press Review.") + note;
+            }
         }
         finally
         {
-            IsBusy = false;
+            _measuring = false;
             QueueSummary();
         }
+    }
+
+    private const int MeasureTimeoutMs = 20000;
+    private bool _measuring;
+
+    private async Task<(KnownLocation K, long Size, bool TimedOut)> MeasureAsync(KnownLocation k)
+    {
+        var work = Task.Run(() => Directory.Exists(k.Path) ? FileSizing.GetSize(k.Path) : 0L);
+        var done = await Task.WhenAny(work, Task.Delay(MeasureTimeoutMs));
+        // A blocked read cannot be cancelled, so it is abandoned and the app carries on.
+        return done == work ? (k, work.Result, false) : (k, 0L, true);
+    }
+
+    private static async Task<T> WithTimeout<T>(Task<T> work, T fallback)
+    {
+        var done = await Task.WhenAny(work, Task.Delay(MeasureTimeoutMs));
+        return done == work ? work.Result : fallback;
     }
 
     private static FileNode NewHeader(string title) =>
