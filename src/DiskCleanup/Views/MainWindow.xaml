@@ -1,0 +1,258 @@
+<Window x:Class="DiskCleanup.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Disk Cleanup" Width="1100" Height="720" MinWidth="860" MinHeight="560"
+        WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <Style x:Key="PageStyle" TargetType="Grid">
+            <Setter Property="Visibility" Value="Collapsed" />
+        </Style>
+        <Style x:Key="Page0" TargetType="Grid" BasedOn="{StaticResource PageStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Page}" Value="0"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="Page1" TargetType="Grid" BasedOn="{StaticResource PageStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Page}" Value="1"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="Page2" TargetType="Grid" BasedOn="{StaticResource PageStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Page}" Value="2"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="Page3" TargetType="Grid" BasedOn="{StaticResource PageStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Page}" Value="3"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="Page4" TargetType="Grid" BasedOn="{StaticResource PageStyle}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Page}" Value="4"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="AdminOnly" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsAdmin}" Value="True"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="AdminBadge" TargetType="Border">
+            <Setter Property="Background" Value="#E5E7EB" />
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="10,3" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsAdmin}" Value="True"><Setter Property="Background" Value="#DCFCE7" /></DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="White" BorderBrush="{StaticResource Border}" BorderThickness="0,0,0,1" Padding="20,12">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Border Style="{StaticResource AdminBadge}">
+                        <TextBlock Text="{Binding AdminText}" FontSize="12" />
+                    </Border>
+                    <Button Content="Run as administrator" Command="{Binding AdminCommand}" Style="{StaticResource AdminOnly}" Margin="10,0,0,0" />
+                </StackPanel>
+                <StackPanel>
+                    <TextBlock Text="Disk Cleanup" FontSize="20" FontWeight="SemiBold" />
+                    <TextBlock Text="See what fills your drives, then choose what goes. Everything goes to the Recycle Bin first."
+                               Foreground="{StaticResource TextMuted}" Margin="0,2,0,0" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Body -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="190" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <ListBox x:Name="Nav" Grid.Column="0" Margin="12" BorderThickness="0" Background="Transparent"
+                     ItemContainerStyle="{StaticResource NavItem}" SelectedIndex="{Binding Page, Mode=TwoWay}">
+                <ListBoxItem Content="Overview" />
+                <ListBoxItem Content="Quick clean" />
+                <ListBoxItem Content="Browse folders" />
+                <ListBoxItem Content="Biggest files" />
+                <ListBoxItem Content="File types" />
+            </ListBox>
+
+            <Grid Grid.Column="1" Margin="0,12,12,12">
+                <!-- 0: Overview -->
+                <Grid Style="{StaticResource Page0}">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Your drives" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10" />
+                            <ItemsControl ItemsSource="{Binding Drives}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource Card}" Margin="0,0,0,10">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="Auto" />
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Title}" FontSize="15" FontWeight="SemiBold" />
+                                                    <ProgressBar Height="10" Maximum="100" Value="{Binding UsedPercent, Mode=OneWay}"
+                                                                 Foreground="{StaticResource Accent}" Background="#E5E7EB"
+                                                                 BorderThickness="0" Margin="0,8,0,6" />
+                                                    <TextBlock>
+                                                        <Run Text="{Binding UsedText, Mode=OneWay}" />
+                                                        <Run Text="   " />
+                                                        <Run Text="{Binding FreeText, Mode=OneWay}" FontWeight="SemiBold" />
+                                                    </TextBlock>
+                                                    <TextBlock Text="{Binding BinText}" Foreground="{StaticResource TextMuted}" Margin="0,2,0,0" />
+                                                    <TextBlock Text="{Binding ScanState}" Foreground="{StaticResource TextMuted}"
+                                                               TextWrapping="Wrap" Margin="0,2,0,0" />
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="16,0,0,0">
+                                                    <Button Content="Scan this drive" Style="{StaticResource PrimaryButton}" Margin="0"
+                                                            Command="{Binding DataContext.ScanCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}" />
+                                                    <Button Content="Empty Recycle Bin..." Margin="0,6,0,0"
+                                                            Command="{Binding DataContext.EmptyBinCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                            CommandParameter="{Binding}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <TextBlock TextWrapping="Wrap" Foreground="{StaticResource TextMuted}" Margin="0,8,0,0"
+                                       Text="Scanning only reads your files. Nothing is changed until you tick items and confirm on the review screen. Only fixed drives are listed, because USB and network drives have no Recycle Bin." />
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <!-- 1: Quick clean -->
+                <Grid Style="{StaticResource Page1}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <DockPanel Margin="0,0,0,10">
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                            <Button Content="Tick all safe items" Command="{Binding SelectSafeCommand}" />
+                            <Button Content="Measure again" Command="{Binding RefreshQuickCommand}" />
+                        </StackPanel>
+                        <TextBlock Text="The usual places that fill up. Green items rebuild themselves."
+                                   VerticalAlignment="Center" Foreground="{StaticResource TextMuted}" />
+                    </DockPanel>
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Padding="6">
+                        <TreeView ItemsSource="{Binding QuickRoots}" ItemTemplate="{StaticResource NodeTemplate}"
+                                  ItemContainerStyle="{StaticResource NodeContainer}" BorderThickness="0"
+                                  VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" />
+                    </Border>
+                </Grid>
+
+                <!-- 2: Browse -->
+                <Grid Style="{StaticResource Page2}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Margin="0,0,0,10" Foreground="{StaticResource TextMuted}"
+                               Text="Folders and files over a few MB, biggest first. Grey boxes are protected and cannot be ticked. Scan a drive first." />
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Padding="6">
+                        <TreeView ItemsSource="{Binding TreeRoots}" ItemTemplate="{StaticResource NodeTemplate}"
+                                  ItemContainerStyle="{StaticResource NodeContainer}" BorderThickness="0"
+                                  VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling" />
+                    </Border>
+                </Grid>
+
+                <!-- 3: Biggest files -->
+                <Grid Style="{StaticResource Page3}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Margin="0,0,0,10" Foreground="{StaticResource TextMuted}"
+                               Text="The 300 biggest single files across the drives you scanned." />
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0">
+                        <DataGrid ItemsSource="{Binding BiggestFiles}" AutoGenerateColumns="False" CanUserAddRows="False"
+                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal" BorderThickness="0"
+                                  HorizontalGridLinesBrush="{StaticResource Border}" Background="White" RowBackground="White"
+                                  SelectionMode="Single" IsReadOnly="False" EnableRowVirtualization="True">
+                            <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="" Width="36">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                      IsEnabled="{Binding CanSelect}" HorizontalAlignment="Center" />
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="File" Binding="{Binding Name}" IsReadOnly="True" Width="*" />
+                                <DataGridTextColumn Header="Folder" Binding="{Binding Folder}" IsReadOnly="True" Width="2*" />
+                                <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" IsReadOnly="True" Width="90">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="TextAlignment" Value="Right" />
+                                            <Setter Property="FontWeight" Value="SemiBold" />
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+
+                <!-- 4: File types -->
+                <Grid Style="{StaticResource Page4}">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Margin="0,0,0,10" Foreground="{StaticResource TextMuted}"
+                               Text="How much space each kind of file uses. For information only." />
+                    <Border Grid.Row="1" Style="{StaticResource Card}" Padding="0">
+                        <DataGrid ItemsSource="{Binding Extensions}" AutoGenerateColumns="False" CanUserAddRows="False"
+                                  IsReadOnly="True" HeadersVisibility="Column" GridLinesVisibility="Horizontal" BorderThickness="0"
+                                  HorizontalGridLinesBrush="{StaticResource Border}" Background="White" RowBackground="White">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Type" Binding="{Binding Extension}" Width="*" />
+                                <DataGridTextColumn Header="Size" Binding="{Binding SizeText}" Width="120" />
+                                <DataGridTextColumn Header="Files" Binding="{Binding Count, StringFormat=N0}" Width="120" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <!-- Status -->
+        <Border Grid.Row="2" Background="White" BorderBrush="{StaticResource Border}" BorderThickness="0,1,0,0" Padding="20,8">
+            <DockPanel>
+                <Button DockPanel.Dock="Right" Content="Cancel scan" Command="{Binding CancelCommand}" />
+                <TextBlock Text="{Binding Status}" Foreground="{StaticResource TextMuted}" TextTrimming="CharacterEllipsis"
+                           VerticalAlignment="Center" />
+            </DockPanel>
+        </Border>
+
+        <!-- Selection bar -->
+        <Border Grid.Row="3" Background="#111827" Padding="20,10">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                    <Button Content="Clear selection" Command="{Binding ClearCommand}" />
+                    <Button Content="Review and move to Recycle Bin..." Command="{Binding ReviewCommand}"
+                            Style="{StaticResource PrimaryButton}" />
+                </StackPanel>
+                <TextBlock Text="{Binding SelectionText}" Foreground="White" FontSize="14" FontWeight="SemiBold"
+                           VerticalAlignment="Center" />
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>
